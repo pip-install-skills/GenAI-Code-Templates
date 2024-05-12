@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f2f2f2;
+        }
+
+        .chat-container {
+            border-radius: 5px;
+            background-color: white;
+            padding: 20px;
+            max-width: 600px; /* Increased max-width */
+            width: 90%; /* Adjusted width for better responsiveness */
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            position: relative; /* Added position relative for absolute positioning */
+        }
+
+        #result {
+            height: 300px; /* Increased height */
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 20px; /* Increased margin for better separation */
+            border-radius: 5px; /* Added border radius */
+        }
+
+        #message {
+            width: calc(100% - 70px); /* Adjusted width */
+            padding: 10px;
+            margin-right: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer; /* Added cursor style for better usability */
+        }
+
+        h1 {
+            margin-top: 0; /* Removed default margin for better alignment */
+        }
+
+        .chat-history {
+            position: absolute; /* Added absolute positioning */
+            bottom: 0; /* Positioned from bottom */
+            right: 0; /* Positioned from right */
+            width: calc(100% - 50px); /* Adjusted width */
+            max-height: 200px; /* Set max-height */
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px; /* Added border radius */
+        }
+
+        .question {
+            text-align: right; /* Align questions to the right */
+            margin-bottom: 5px; /* Added margin between chat messages */
+            color: #007BFF; /* Changed color for questions */
+        }
+
+        .answer {
+            text-align: left; /* Align answers to the left */
+            margin-bottom: 5px; /* Added margin between chat messages */
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="chat-container">
+        <h1>Chat with AI</h1>
+        <div id="result"></div>
+
+        <input type="text" id="message" placeholder="Type your message here">
+        <button onclick="sendMessage()">Send Message</button>
+
+        <div class="chat-history" id="chat-history"></div>
+    </div>
+
+    <script>
+        async function sendMessage() {
+            var message = document.getElementById("message").value;
+            var response = await fetch('http://localhost:6677/stream_chat/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ content: message })
+            });
+
+            var reader = response.body.getReader();
+            var decoder = new TextDecoder('utf-8');
+
+            reader.read().then(function processResult(result) {
+                if (result.done) return;
+                let token = decoder.decode(result.value);
+                if (token.endsWith('.') || token.endsWith('!') || token.endsWith('?')) {
+                    document.getElementById("result").innerHTML += token + "<br>";
+                } else {
+                    document.getElementById("result").innerHTML += token + ' ';
+                }
+                return reader.read().then(processResult);
+            });
+
+            // Add the message to chat history with appropriate class for styling
+            var chatHistory = document.getElementById("chat-history");
+            var messageElement = document.createElement("div");
+            messageElement.textContent = message;
+            if (message.endsWith('?')) {
+                messageElement.className = "question";
+            } else {
+                messageElement.className = "answer";
+            }
+            // Insert the message at the beginning of chat history
+            chatHistory.insertBefore(messageElement, chatHistory.firstChild);
+
+            // Clear input field after sending message
+            document.getElementById("message").value = "";
+        }
+    </script>
+
+</body>
+
+</html>
