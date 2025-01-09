@@ -4,10 +4,9 @@ import requests
 from dotenv import load_dotenv
 from requests.auth import HTTPBasicAuth
 from langchain.agents import create_react_agent, AgentExecutor
+from langchain_openai import ChatOpenAI
 from langchain.tools import tool
 from langchain import hub
-
-from app.classes.base_llm_class import BaseLLMClass
 
 # Load environment variables
 load_dotenv(override=True)
@@ -17,8 +16,11 @@ WEBHOOK_USERNAME = os.getenv("WEBHOOK_USERNAME")
 WEBHOOK_PASSWORD = os.getenv("WEBHOOK_PASSWORD")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "http://localhost:5678/webhook/1ce93035-8e44-4b02-84f8-42944990c59e")
 
-# Initialize base LLM class
-base_llm_class = BaseLLMClass()
+def get_llm(temperature: float = 0.7, max_tokens: int = 1024) -> ChatOpenAI:        
+        return ChatOpenAI(
+            max_tokens=max_tokens,
+            temperature=temperature
+        )
 
 @tool
 def add(a: int, b: int) -> int:
@@ -79,11 +81,10 @@ def main():
     tools = [websearch, add]
 
     # Initialize the LLM
-    llm = base_llm_class.get_llm()
+    llm = get_llm()
 
     # Pull the prompt template from the hub
     prompt_template = hub.pull("hwchase17/react")
-    print(prompt_template)
 
     # Create the agent with the tools and LLM
     agent = create_react_agent(llm, tools, prompt_template)
